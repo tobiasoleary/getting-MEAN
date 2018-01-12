@@ -1,17 +1,41 @@
 'use strict'
 
 const faker = require('faker')
-
-
-
+const mongoose = require('mongoose')
+require('../app_server/models/locations')
+const dbURI = 'mongodb://localhost/loc8r';
+const Location = mongoose.model('Location')
 
 function main() {
 
+	let locationsToCreate = []
 	for(var i = 0; i < 5; ++i) {
-		let randomLocation = createRandomLocation()
-		console.dir(randomLocation)
-		console.log('')
+		locationsToCreate.push(createRandomLocation())
 	}
+
+	mongoose.connect(dbURI, {useMongoClient: true});
+
+
+
+	locationsToCreate.forEach((item) => {
+
+		let newLocation = new Location(item)
+		console.dir(newLocation)
+		console.log('')
+		newLocation.save((err) => {
+			if (err) {
+				console.log('!!!Error Saving Location: ' + err.errmsg)
+			} else {
+				console.log(`Saved Location: ${item.name}`)
+			}
+		})
+	})
+
+	setTimeout(() => {
+		mongoose.connection.close(() => {
+			console.log('Mongoose Disconnected')
+		})
+	}, 5000)
 
 }
 
