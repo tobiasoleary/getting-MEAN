@@ -126,15 +126,34 @@ function createRandomLocation() {
 		facilities.push(element)
 	})
 
+	const miles = 40
+	const meters = miles * 1609.34
+	let randomCoordsNearBHM = createRandomCoordinates(33.543682, -86.779633, meters)
+
 	return {
 		name: faker.company.companyName(0) + ' Coffee',
 		address: address,
 		facilities: facilities,
-		coords: [faker.address.longitude(), faker.address.latitude()],
+		coords: [randomCoordsNearBHM.lng, randomCoordsNearBHM.lat],
 		openingTimes: openingTimes,
 		reviews: reviews
 	}
 
+}
+
+function createRandomCoordinates(nearLat, nearLng, withInMeters) {
+	const r = withInMeters/111300 // = 100 meters
+  , y0 = nearLat
+  , x0 = nearLng
+  , u = Math.random()
+  , v = Math.random()
+  , w = r * Math.sqrt(u)
+  , t = 2 * Math.PI * v
+  , x = w * Math.cos(t)
+  , y1 = w * Math.sin(t)
+  , x1 = x / Math.cos(y0)
+
+	return {lat: y0 + y1, lng: x0 + x1}
 }
 
 main()

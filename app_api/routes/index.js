@@ -10,10 +10,11 @@ const reviewsController = require('../controllers/reviews')
 // Routes for Locations
 
 router.get('/locations', locationsController.locationsListByDistance)
+router.get('/locations/all', locationsController.locationsListAll)
 router.post('/locations', locationsController.locationsCreate)
 router.get('/locations/:locationId', locationsController.locationsReadOne)
 router.put('/locations/:locationId', locationsController.locationsUpdateOne)
-router.delete('/llcations/:locationId', locationsController.locationsDeleteOne)
+router.delete('/locations/:locationId', locationsController.locationsDeleteOne)
 
 
 ///////////////////////////
