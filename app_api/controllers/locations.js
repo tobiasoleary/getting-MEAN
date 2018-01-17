@@ -20,7 +20,7 @@ function geoNearResultsToLocations(results) {
 			address: doc.obj.address,
 			rating: doc.obj.rating,
 			facilities: doc.obj.facilities,
-			_id: doc.obj.id
+			_id: doc.obj._id
 		})
 	})
 
