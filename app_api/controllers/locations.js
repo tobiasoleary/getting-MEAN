@@ -4,10 +4,27 @@ const mongoose = require('mongoose')
 const Location = mongoose.model('Location')
 
 const MILES_TO_METERS = 1609.34
+const METERS_TO_MILES = 0.000621371
 
 function dev_SuccessResponse(res) {
 	res.status(200)
 	res.json(JSON.stringify({status: "SUCCESS"}))
+}
+
+function geoNearResultsToLocations(results) {
+	let locations = []
+	results.forEach((doc) => {
+		locations.push({
+			distance: doc.dis * METERS_TO_MILES,
+			name: doc.obj.name,
+			address: doc.obj.address,
+			rating: doc.obj.rating,
+			facilities: doc.obj.facilities,
+			_id: doc.obj.id
+		})
+	})
+
+	return locations
 }
 
 var theEarth = (function() {
@@ -50,7 +67,7 @@ const locationsController = {
 
 		let lat = null
 		let lng = null
-		let maxDist = null
+		let maxDistInMiles = null
 
 		let nullTheNaN = (value) => { return value === NaN ? null : value }
 
@@ -60,8 +77,8 @@ const locationsController = {
 		}
 
 		if (lat === null || lng === null) {
-			req.status(400)
-			req.json({
+			res.status(400)
+			res.json({
 				'status' : 'error',
 				'message' : 'missing lat and/or lng query parameters'
 			})
@@ -69,11 +86,11 @@ const locationsController = {
 		}
 
 		if (req.query && req.query.maxDist) {
-			maxDist = nullTheNaN(parseFloat(req.query.maxDist))
+			maxDistInMiles = nullTheNaN(parseFloat(req.query.maxDist))
 		}
 
-		if (maxDist === null) {
-			maxDist = 20 * MILES_TO_METERS
+		if (maxDistInMiles === null) {
+			maxDistInMiles = 20
 		}
 
 
@@ -81,24 +98,20 @@ const locationsController = {
 		console.log('Request Query:')
 		console.dir(req.query)
 
-		// let maxDist = parseFloat(req.query.maxDist)
-
 		const point = {
 			type: "Point",
 			coordinates: [lng, lat]
 		}
 
-		maxDist = maxDist * MILES_TO_METERS
+		let maxDistInMeters = maxDistInMiles * MILES_TO_METERS
 		console.dir(point)
-		console.log('maxDist: ' + maxDist)
-		console.log('maxDist rads: ' + theEarth.getRadsFromDistance(maxDist))
 		const geoOptions = {
 			spherical: true,
-			// maxDistance: theEarth.getRadsFromDistance(maxDist),
-			num: 10
+			num: 10,
+			maxDistance: maxDistInMeters
 		}
 
-		Location.geoNear(point, geoOptions, (err, locations, stats) => {
+		Location.geoNear(point, geoOptions, (err, results, stats) => {
 			if (err) {
 				console.log('>>>ERROR: ' + err)
 				res.status(500)
@@ -106,8 +119,10 @@ const locationsController = {
 				return
 			} //else
 
-			console.log('LOCATIONS:')
-			console.dir(locations)
+			console.log(`results (${results.length}):`)
+			console.dir(results)
+
+			let locations = geoNearResultsToLocations(results)
 
 			res.status(200)
 			res.json(locations)
