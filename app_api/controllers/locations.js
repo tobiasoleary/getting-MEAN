@@ -1,7 +1,7 @@
 'use strict'
 
 const mongoose = require('mongoose')
-const Location = mongoose.model('Location')
+const LocationModel = mongoose.model('Location')
 
 const MILES_TO_METERS = 1609.34
 const METERS_TO_MILES = 0.000621371
@@ -9,6 +9,46 @@ const METERS_TO_MILES = 0.000621371
 function dev_SuccessResponse(res) {
 	res.status(200)
 	res.json(JSON.stringify({status: "SUCCESS"}))
+}
+
+function makeLocationFromRequest(req) {
+	return {
+		name: req.body.name,
+		address: req.body.address,
+		facilities: Array.from(req.body.facilities.split(","), x => x.trim()),
+		coords: [parseFloat(req.body.lng), parseFloat(req.body.lat)],
+		openingTimes: [{
+			days: req.body.days1,
+			opening: req.body.opening1,
+			closing: req.body.closing1,
+			closed: req.body.closed1
+		}, {
+			days: req.body.days2,
+			opening: req.body.opening2,
+			closing: req.body.closing2,
+			closed: req.body.closed2
+		}]
+	}
+}
+
+function updateLocationFromRequest(req, location) {
+	location.name = req.body.name
+	location.address = req.body.address,
+	location.facilities = Array.from(req.body.facilities.split(","), x => x.trim()),
+	location.coords = [parseFloat(req.body.lng), parseFloat(req.body.lat)],
+	location.openingTimes = [{
+		days: req.body.days1,
+		opening: req.body.opening1,
+		closing: req.body.closing1,
+		closed: req.body.closed1
+	}, {
+		days: req.body.days2,
+		opening: req.body.opening2,
+		closing: req.body.closing2,
+		closed: req.body.closed2
+	}]
+
+	return location
 }
 
 function geoNearResultsToLocations(results) {
@@ -48,7 +88,7 @@ var theEarth = (function() {
 const locationsController = {
 
 	locationsListAll: (req, res) => {
-		Location.find().exec((err, locations) => {
+		LocationModel.find().exec((err, locations) => {
 			if (err) {
 				res.status(500)
 				res.json({'status':'error', 'message' : err.errmsg })
@@ -111,7 +151,7 @@ const locationsController = {
 			maxDistance: maxDistInMeters
 		}
 
-		Location.geoNear(point, geoOptions, (err, results, stats) => {
+		LocationModel.geoNear(point, geoOptions, (err, results, stats) => {
 			if (err) {
 				console.log('>>>ERROR: ' + err)
 				res.status(500)
@@ -131,7 +171,28 @@ const locationsController = {
 	},
 
 	locationsCreate: (req, res) => {
-		dev_SuccessResponse(res)
+
+		console.log('Location Create Request Body:')
+		console.dir(req.body)
+
+		let locationToCreate = makeLocationFromRequest(req)
+		console.log()
+
+		console.log('Location To Create: ')
+		console.dir(locationToCreate)
+
+
+		LocationModel.create(locationToCreate, (err, location) => {
+			if (err) {
+				res.status(400)
+				res.json(err)
+				return
+			} //else
+			res.status(201)
+			res.json(location)
+		})
+
+
 	},
 
 	locationsReadOne: (req, res) => {
@@ -146,7 +207,7 @@ const locationsController = {
 		} //else
 
 
-		Location.findById(locationId).exec((err, location) => {
+		LocationModel.findById(locationId).exec((err, location) => {
 			if(err) {
 				console.log(`!!!ERROR finding location with id: ${locationId}.\t\n${err}`)
 				res.status(500)
@@ -171,11 +232,71 @@ const locationsController = {
 	},
 
 	locationsUpdateOne: (req, res) => {
-		dev_SuccessResponse(res)
+		if(!req.params.locationId) {
+			res.status(404)
+			res.json({'message' : 'Not Found, Location Id Parameter is Missing'})
+			return
+		} //else
+
+		LocationModel
+		.findById(req.params.locationId)
+		.select('-reviews -rating')
+		.exec((err, location) => {
+			if (!location) {
+				res.status(404)
+				res.json({'message' : `Location with id (${req.params.locationId}) not found.`})
+				return
+			} //else
+
+			if (err) {
+				console.log('Location Update One - Error finding Location by Id')
+				console.dir(err)
+				res.status(400)
+				res.json(err)
+				return
+			} // else
+
+			let updatedLocation = updateLocationFromRequest(req, location)
+			updatedLocation.save( (err, location) => {
+				if (err) {
+					console.log('Error Updating Location')
+					console.dir(err)
+
+					res.status(404)
+					res.json(err)
+					return
+				} //else
+
+				res.status(200)
+				res.json(location)
+
+			})
+		})
+
 	},
 
 	locationsDeleteOne: (req, res) => {
-		dev_SuccessResponse(res)
+		if (!req.params.locationId) {
+			res.status(404)
+			res.json({'message' : 'Missing URL Parameter - Expecting locationId'})
+			return
+		} //else
+
+		LocationModel
+		.findByIdAndRemove(req.params.locationId)
+		.exec((err, location) => {
+			if(err) {
+				console.log('locationsDeleteOne Error')
+				console.dir(err)
+
+				res.status(404)
+				res.json(err)
+				return
+			} //else
+
+			res.status(204)
+			res.json(null)
+		})
 	}
 }
 

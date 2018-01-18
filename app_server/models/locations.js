@@ -16,23 +16,14 @@ var reviewSchema = new mongoose.Schema({
 });
 
 var openingTimeSchema = new mongoose.Schema({
-    days: {
-        type: String,
-        required: true
-    },
+    days: { type: String, required: true },
     opening: String,
     closing: String,
-    closed: {
-        type: Boolean,
-        required: true
-    }
+    closed: { type: Boolean, required: true }
 });
 
 var locationSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
-    },
+    name: { type: String, required: true },
     address: String,
     rating: {
         type: Number,
@@ -44,10 +35,13 @@ var locationSchema = new mongoose.Schema({
     // Always store coordinates longitude, latitude order.
     coords: {
         type: [Number],
-        index: '2dsphere'
+        index: '2dsphere',
+        required: true
     },
     openingTimes: [openingTimeSchema],
     reviews: [reviewSchema]
+}, {
+  usePushEach: true
 });
 
 mongoose.model('Location', locationSchema);
