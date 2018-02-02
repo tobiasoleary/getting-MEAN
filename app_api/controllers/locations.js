@@ -23,6 +23,10 @@ var theEarth = (function() {
   };
 })();
 
+module.exports.locationsList = function(req, res) {
+
+}
+
 /* GET list of locations */
 module.exports.locationsListByDistance = function(req, res) {
   var lng = parseFloat(req.query.lng);
@@ -34,7 +38,8 @@ module.exports.locationsListByDistance = function(req, res) {
   };
   var geoOptions = {
     spherical: true,
-    maxDistance: theEarth.getRadsFromDistance(maxDistance),
+    // maxDistance: theEarth.getRadsFromDistance(maxDistance),
+    maxDistance: 10000.0,
     num: 10
   };
   if ((!lng && lng!==0) || (!lat && lat!==0) || ! maxDistance) {
